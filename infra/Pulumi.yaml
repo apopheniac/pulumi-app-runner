@@ -1,0 +1,3 @@
+name: nodejs-app-runner
+runtime: nodejs
+description: Example NodeJS app deployed with AWS App Runner
