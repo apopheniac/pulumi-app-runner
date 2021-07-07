@@ -1,6 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { repository } from "./ecr";
+import { image } from "./ecr";
 
 const config = new pulumi.Config();
 const appName = config.require("app-name");
@@ -65,7 +65,7 @@ export const service = new aws.apprunner.Service(appName, {
       }),
     },
     imageRepository: {
-      imageIdentifier: pulumi.interpolate`${repository.repository.repositoryUrl}:latest`,
+      imageIdentifier: image,
       imageRepositoryType: "ECR",
       imageConfiguration: {
         port: "8080",
