@@ -1,8 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { repository as repo } from "./ecr";
+import { image } from "./ecr";
 
-const stackName = pulumi.getStack();
 const config = new pulumi.Config();
 const appName = config.require("app-name");
 
@@ -26,47 +25,38 @@ const pullImagePolicy = new aws.iam.Policy("AmazonEC2ContainerRegistryPull", {
   },
 });
 
-const AppRunnerECRAccessRole = new aws.iam.Role(
-  "AppRunnerECRAccessRole",
-  {
-    assumeRolePolicy:
-      '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"build.apprunner.amazonaws.com"},"Action":"sts:AssumeRole"}]}',
-    description: "This role gives App Runner permission to access ECR",
-    forceDetachPolicies: false,
-    maxSessionDuration: 3600,
-    name: "AppRunnerECRAccessRole",
-    path: "/service-role/",
-  },
-  {
-    protect: true,
-  }
-);
-
-const serviceRole = new aws.iam.Role(`${appName}ECRAccessRole`, {
-  path: "/service-role/",
+const appRunnerECRAccessRole = new aws.iam.Role("AppRunnerECRAccessRole", {
   assumeRolePolicy: {
     Version: "2012-10-17",
     Statement: [
       {
         Effect: "Allow",
-        Principal: {
-          AWS: "tasks.apprunner.amazonaws.com",
-        },
+        Principal: { Service: "build.apprunner.amazonaws.com" },
         Action: "sts:AssumeRole",
       },
     ],
   },
+  description: "This role gives App Runner permission to access ECR",
+  forceDetachPolicies: false,
+  maxSessionDuration: 3600,
+  name: "AppRunnerECRAccessRole",
+  path: "/service-role/",
 });
 
 export const service = new aws.apprunner.Service(appName, {
   serviceName: appName,
   sourceConfiguration: {
     authenticationConfiguration: {
-      accessRoleArn: AppRunnerECRAccessRole.arn,
-      //  "arn:aws:iam::375001022156:role/service-role/AppRunnerECRAccessRole",
+      // TODO: Replace delay with test for ability to assume role
+      accessRoleArn: appRunnerECRAccessRole.arn.apply(async (arn) => {
+        if (!pulumi.runtime.isDryRun()) {
+          await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
+        }
+        return arn;
+      }),
     },
     imageRepository: {
-      imageIdentifier: pulumi.interpolate`${repo.repository.repositoryUrl}:latest`,
+      imageIdentifier: image,
       imageRepositoryType: "ECR",
       imageConfiguration: {
         port: "8080",
