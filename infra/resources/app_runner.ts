@@ -43,6 +43,14 @@ const appRunnerECRAccessRole = new aws.iam.Role("AppRunnerECRAccessRole", {
   path: "/service-role/",
 });
 
+const policyAttachment = new aws.iam.RolePolicyAttachment(
+  "AppRunnerECRPolicyAttachment",
+  {
+    role: appRunnerECRAccessRole,
+    policyArn: pullImagePolicy.arn,
+  }
+);
+
 export const service = new aws.apprunner.Service(appName, {
   serviceName: appName,
   sourceConfiguration: {
