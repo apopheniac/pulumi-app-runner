@@ -1,6 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import { image } from "./ecr";
+import { repository } from "./ecr";
 
 const config = new pulumi.Config();
 const appName = config.require("app-name");
@@ -48,6 +48,7 @@ export const service = new aws.apprunner.Service(appName, {
   sourceConfiguration: {
     authenticationConfiguration: {
       // TODO: Replace delay with test for ability to assume role
+      // https://github.com/pulumi/pulumi-aws/issues/673#issuecomment-569944177†NEW
       accessRoleArn: appRunnerECRAccessRole.arn.apply(async (arn) => {
         if (!pulumi.runtime.isDryRun()) {
           await new Promise((resolve) => setTimeout(resolve, 30 * 1000));
@@ -56,7 +57,7 @@ export const service = new aws.apprunner.Service(appName, {
       }),
     },
     imageRepository: {
-      imageIdentifier: image,
+      imageIdentifier: pulumi.interpolate`${repository.repository.repositoryUrl}:latest`,
       imageRepositoryType: "ECR",
       imageConfiguration: {
         port: "8080",
