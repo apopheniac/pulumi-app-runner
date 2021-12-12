@@ -5,3 +5,4 @@ This repo implements a simple web server in Javascript, hosted on AWS app runner
 # Getting started
 
 - Set up your AWS credentials
+- Authenticate the Pulumi CLI
